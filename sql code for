@@ -1,0 +1,52 @@
+--covid death and vac 
+-- select data that we want to check first
+select location date, total_cases, new_cases, total_deaths, population 
+
+from covid_death
+-- we order this by date and total case i.e column 1 and 2
+order by 1,2 
+
+-- we look at total cases vs total deaths
+--since we have specified total_cases and total_deaths as integer, we have to convert them to numeric
+-- this is because, division of two interger, result is an integer, and resulting 0 is truncated, resulting int zero
+select location date, total_cases, total_deaths,(total_deaths/total_cases)*100 as DeathPercentage
+from covid_death
+order by 1,2 
+
+-- to fix the zero in deathPercentage,we do the following, put ::numeric beofre the integer values
+select location date, total_cases, total_deaths,(total_deaths::numeric/total_cases::numeric)*100 as DeathPercentage
+from covid_death
+order by 1,2 
+
+-- to specify country
+
+select 
+	date, 
+	location,
+	total_cases,
+	total_deaths,
+	(total_deaths::numeric/total_cases::numeric)*100 as DeathPercentage
+from 
+	covid_death 
+ -- in postgresql you need to put single '' after the like statement 
+where location like '%Mexico%'
+order by 
+1,2 limit 10
+
+
+--total cases vs population
+--shows how many percentage of population got covid
+select 
+	date, 
+	location,
+	total_cases,
+	population,
+	(total_cases::numeric/population::numeric)*100 as DeathPercentage
+from 
+	covid_death 
+where location like '%state%'
+order by 
+1,2
+
+limit 10
+
