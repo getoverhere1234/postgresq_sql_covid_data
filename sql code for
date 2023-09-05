@@ -68,4 +68,25 @@ group by
 
 order by PercentPopulationInfected desc
 
---
+---- to prevent null enries
+select * from covid_death
+where continent is not null
+order by 3,4 limit 100
+
+
+-- looking at countries with the highest death count per population
+
+select 
+	location,
+	MAX(total_deaths) as TotalDeathCount 
+from 
+	covid_death 
+--where location ilike '%India%' 
+-- when you use Max function, you need a group by statement
+where continent is not null
+group by location
+order by TotalDeathCount desc
+
+
+
+
