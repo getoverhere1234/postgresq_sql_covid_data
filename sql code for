@@ -35,16 +35,17 @@ order by
 
 
 --total cases vs population
---shows how many percentage of population got covid
+--shows how many percentage of the population got covid
 select 
 	date, 
 	location,
 	total_cases,
 	population,
-	(total_cases::numeric/population::numeric)*100 as DeathPercentage
+	(total_cases::numeric/population::numeric)*100 as PercentPopulationInfected
 from 
 	covid_death 
-where location like '%state%'
+---to search for country, use the statement ilike followed by '%string%" the % indicate any length of words before and after
+where location ilike '%state%'
 order by 
 1,2
 
