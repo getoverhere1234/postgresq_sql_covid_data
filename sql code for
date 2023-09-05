@@ -51,3 +51,21 @@ order by
 
 limit 10
 
+
+-- looking at countries with highest infection rate compared to population
+
+select 
+	location,
+	population,
+	MAX(total_cases) as HighestInfectionCount, --TO SHOW HOW ONLY HIGHEST CASES
+	MAX(total_cases::numeric/population::numeric)*100 as PercentPopulationInfected
+from 
+	covid_death 
+--where location ilike '%string%' if you want to specify
+-- when you use Max function, you need a group by statement
+group by
+ 	location, population -- Add GROUP BY clause for location and population
+
+order by PercentPopulationInfected desc
+
+--
