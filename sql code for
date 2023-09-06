@@ -74,18 +74,226 @@ where continent is not null
 order by 3,4 limit 100
 
 
--- looking at countries with the highest death count per population
+-- Looking at countries with highest infection Rate compared to population.
 
-select 
-	location,
-	MAX(total_deaths) as TotalDeathCount 
-from 
-	covid_death 
---where location ilike '%India%' 
--- when you use Max function, you need a group by statement
+select location, Population, MAX(total_cases) as HighestInfectionCount, 
+MAX(total_cases::numeric/Population::numeric)*100 as PercentPopulationInfected
+from covid_death
+--where location ilike '%state' 
+group by location, Population
+order by 1,2
+
+-- 
+select * 
+where location '%states%'
+from covid_death
+
+--
+select location, Population, MAX(total_cases) as HighestInfectionCount, 
+MAX(total_cases::numeric/Population::numeric)*100 as PercentPopulationInfected
+from covid_death
+--where location ilike '%state' 
+group by location, Population
+order by PercentPopulationInfected desc
+
+--showing countries with highest death count per population
+
+select location, MAX(Total_deaths::bigint) as TotalDeathCount
+from covid_death
+--where location ilike '%state' 
+group by location
+order by TotalDeathCount desc
+
+--or another method is, this is because the total death count is displayed as numeric
+
+select location, MAX(CAST(Total_deaths AS int)) as TotalDeathCount
+from covid_death
+--where location ilike '%state' 
+group by location
+order by TotalDeathCount desc
+
+
+--however the problem here is that we see continents such as Asia in the location, this is becase 
+--in some column it is written as contitnetn is null is some column
+--and the corresponding location has the name of continent in the location
+--to sort this we use the not null function
+
+select * 
+from covid_death
+where continent is not null
+order by 3,4
+
+
+--therefore the new update query looks like
+select location, MAX(CAST(Total_deaths AS int)) as TotalDeathCount
+from covid_death
+--where location ilike '%state' 
 where continent is not null
 group by location
 order by TotalDeathCount desc
+
+--LETS BREAK THINGS DOWN BY CONTINENT
+select continent, MAX(CAST(Total_deaths AS int)) as TotalDeathCount
+from covid_death
+--where location ilike '%state' 
+where continent is not null
+group by continent
+order by TotalDeathCount desc
+
+-- this script gives the rigt answer
+select location, MAX(CAST(Total_deaths AS int)) as TotalDeathCount
+from covid_death
+--where location ilike '%state' 
+where continent is not null
+group by location
+order by TotalDeathCount desc
+
+
+
+--showing continenets with highest death count per population
+--always imagine your final image/presentation
+
+select location, MAX(CAST(Total_deaths AS int)) as TotalDeathCount
+from covid_death
+--where location ilike '%state' 
+where continent is not null
+group by location
+order by TotalDeathCount desc
+
+
+-- Global numbers
+select location, date, total_cases, total_deaths, (total_deaths::numeric/total_cases::numeric)*100 as DeathPercentage
+from covid_death
+where location ilike '%states%'
+and continent is not null
+order by 1,2
+
+
+--global no location
+select date, SUM(new_cases) as total_new_cases, total_deaths, (total_deaths::numeric/total_cases::numeric)*100 as DeathPercentage
+from covid_death
+--where location ilike '%states%'
+where continent is not null
+group by date, total_deaths, total_cases
+order by date
+
+--GLOBAL NUMBERS
+Select SUM(new_cases) as total_cases, SUM(cast(new_deaths as int)) as total_deaths, SUM(cast(new_deaths as int))/SUM(New_Cases)*100 as DeathPercentage
+From covid_death
+--Where location like '%states%'
+where continent is not null 
+--Group By date
+order by 1,2
+
+
+--we will now join table covd_death, covid_vac
+select * 
+from covid_death as dea
+join covid_vac as vac 
+	on dea.location = vac.location
+	and  dea.date = vac.date
+	
+--looking at total population vs vaccination i.e how many people in the world that has been vaccinated
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+from covid_death as dea
+join covid_vac as vac 
+	on dea.location = vac.location
+	and  dea.date = vac.date
+
+-- we can also order
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+from covid_death as dea
+join covid_vac as vac 
+	on dea.location = vac.location
+	and  dea.date = vac.date
+order by 1,2,3
+
+--remember to remove conitnent not null
+--pro tip, when you you use clause such as group, group by, you have to mention table name also
+-- in this example WHERE is specified with dea.table which is an alisa for covid_death
+
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+from covid_death as dea
+join covid_vac as vac 
+	on dea.location = vac.location
+	and  dea.date = vac.date
+where dea.continent is not null
+order by 1,2,3
+
+--We want to know vaccication rate
+select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+--the over partition prevents the sum condition from 
+	SUM(Convert(int, vac.new_vaccinations)) OVER (partition by dea.location)
+from covid_death as dea
+join covid_vac as vac 
+	on dea.location = vac.location
+	and  dea.date = vac.date
+where dea.continent is not null
+order by 1,2,3
+--
+--
+/*This SQL query is used to retrieve information from two tables, covid_death and covid_vac, and perform a windowed aggregation to calculate the total vaccinations for each location. Here's an explanation of the code:
+
+SELECT statement:
+
+dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations: These are the columns selected for the output. You want to retrieve data from both the covid_death (aliased as dea) and covid_vac (aliased as vac) tables.
+
+SUM(CAST(vac.new_vaccinations AS INT)) OVER (PARTITION BY dea.location) AS total_vaccinations: This is a windowed aggregation using the SUM function. It calculates the sum of vac.new_vaccinations for each location (dea.location). The CAST function is used to convert the new_vaccinations column to an integer before summing. The result is aliased as total_vaccinations.
+
+FROM clause:
+
+covid_death AS dea and covid_vac AS vac: These clauses alias the tables covid_death and covid_vac as dea and vac, respectively. This allows you to refer to columns in these tables using these aliases in the rest of the query.
+JOIN clause:
+
+ON dea.location = vac.location AND dea.date = vac.date: This is the condition for joining the two tables. It matches rows where the location and date columns in both tables are equal, indicating a match between COVID death data and vaccination data for the same location and date.
+WHERE clause:
+
+dea.continent IS NOT NULL: This condition filters out rows where the continent column in the covid_death table is not null, ensuring that you only retrieve data for locations that have a valid continent specified.
+ORDER BY clause:
+
+ORDER BY 1, 2, 3: This orders the result set by the first, second, and third columns (continent, location, and date) in ascending order.
+In summary, this query retrieves data about COVID deaths and vaccinations, calculates the total vaccinations for each location, and presents the results with continent, location, date, population, new vaccinations, and the total vaccinations for each location. It's useful for analyzing the relationship between COVID data and vaccination data at different locations and dates.*/
+
+SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+       SUM(Cast(vac.new_vaccinations as int)) OVER (PARTITION BY dea.location) AS total_vaccinations
+FROM covid_death AS dea
+JOIN covid_vac AS vac 
+    ON dea.location = vac.location
+    AND dea.date = vac.date
+WHERE dea.continent IS NOT NULL
+ORDER BY 1, 2, 3;
+
+--- temp table
+WITH PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated) AS
+(
+    SELECT dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations,
+           SUM(CAST(vac.new_vaccinations AS int)) OVER (PARTITION BY dea.Location ORDER BY dea.location, dea.Date) AS RollingPeopleVaccinated
+    FROM covid_death AS dea
+    JOIN covid_vac AS vac
+        ON dea.location = vac.location
+        AND dea.date = vac.date
+    WHERE dea.continent IS NOT NULL 
+)
+SELECT *, (RollingPeopleVaccinated::numeric / Population) * 100 AS PercentageVaccinated
+FROM PopvsVac;
+
+--  save table 
+Create View PercentPopulationVaccinated as
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(CONVERT(int,vac.new_vaccinations)) OVER (Partition by dea.Location Order by dea.location, dea.Date) as RollingPeopleVaccinated
+--, (RollingPeopleVaccinated/population)*100
+From Covid_death as dea
+Join Covid_vac
+	On dea.location = vac.location
+	and dea.date = vac.date
+where dea.continent is not null
+
+
+
+
+
+
+
 
 
 
